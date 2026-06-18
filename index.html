@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nightscape Tritype - 夜景トライタイプ診断</title>
+  <!-- Google Fonts: Noto Serif JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 🚀 ローディング画面 -->
+  <div id="loading-screen">
+    <div class="loader-container">
+      <div class="loader"></div>
+      <p class="loading-text">星を瞬かせています...</p>
+    </div>
+  </div>
+
+  <!-- 🏠 ホームへ戻るリンク -->
+  <div id="home-link-container">
+    <a href="https://mofu-mitsu.github.io/lab.html" id="home-link">
+      <i class="fa-solid fa-house"></i> ホームへ戻る
+    </a>
+  </div>
+
+  <!-- 夜空と星レイヤー -->
+  <div id="night-sky">
+    <div id="stars-container"></div>
+    <!-- 🟢 下から湧き上がる玉ボケ（オーブ） -->
+    <div class="orbs-container">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="orb orb3"></div>
+      <div class="orb orb4"></div>
+      <div class="orb orb5"></div>
+    </div>
+  </div>
+  <div id="weather-layer"></div>
+  
+  <!-- 街のシルエット -->
+  <div id="cityscape">
+    <div class="building b1"><div class="windows"></div></div>
+    <div class="building b2"><div class="windows"></div></div>
+    <div class="tower">
+      <div class="tower-top"></div>
+      <div class="tower-body"></div>
+    </div>
+    <div class="building b3"><div class="windows"></div></div>
+    <div class="building b4"><div class="windows"></div></div>
+  </div>
+
+  <!-- 診断UIコンテナ -->
+  <div id="app-container">
+    
+    <!-- スタート画面 -->
+    <div id="start-screen" class="screen">
+      <i class="fa-solid fa-moon title-icon"></i>
+      <h1>Nightscape Tritype</h1>
+      <p class="subtitle">〜 星が導く、あなたの輪郭 〜</p>
+      <div class="diag-type-badge">エニアグラム × トライタイプ × 生得本能</div>
+      <p class="desc-text">
+        夜景を完成させながら、あなたの「本質」を見つけましょう。<br>
+        本診断では、エニアグラムのメインタイプ、3つのセンターから形成されるトライタイプ、そして自己保存(sp)・社会的(so)・性的(sx)の生得本能を網羅して分析します。<br>
+        直感に従って、夜空を見上げてください。
+      </p>
+      
+      <div class="start-actions">
+        <input type="text" id="self-type-input" placeholder="自認タイプがあれば入力 (任意)">
+        <button id="start-btn">夜空を見上げる <i class="fa-solid fa-wand-magic-sparkles"></i></button>
+        <button id="show-explain-btn" class="sub-action-btn"><i class="fa-solid fa-book-open"></i> エニアグラム解説</button>
+      </div>
+    </div>
+
+    <!-- フェーズ1: チェックボックス -->
+    <div id="phase1-screen" class="screen">
+      <div class="progress-bar"><div class="progress" id="p1-progress"></div></div>
+      <h2>Phase 1: 記憶の欠片 <span id="p1-page-text"></span></h2>
+      <p>当てはまるものをすべて選んでください。</p>
+      <div id="checkbox-container"></div>
+      <div class="nav-buttons">
+        <button id="prev-phase1-btn" class="back-btn"><i class="fa-solid fa-chevron-left"></i> 戻る</button>
+        <button id="next-phase1-btn">次へ <i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+
+    <!-- フェーズ2: 5段階評価 -->
+    <div id="phase2-screen" class="screen">
+      <div class="progress-bar"><div class="progress" id="p2-progress"></div></div>
+      <h2>Phase 2: 価値観の秤</h2>
+      <div id="question-text"></div>
+      <div id="options-container"></div>
+      <div class="nav-buttons">
+        <button id="prev-phase2-btn" class="back-btn"><i class="fa-solid fa-chevron-left"></i> 戻る</button>
+      </div>
+      <!-- 🐛 隠れLSI芋虫 -->
+      <div id="lsi-caterpillar" class="hidden">🐛</div>
+    </div>
+
+    <!-- フェーズ3: ギミック (星選び) -->
+    <div id="star-gimmick-screen" class="screen">
+      <h2>Mini Game: 惹かれる星</h2>
+      <p>夜空から、直感で3つの星をタップしてください。</p>
+      <div id="star-field"></div>
+    </div>
+
+    <!-- フェーズ3: ギミック (雨) -->
+    <div id="rain-gimmick-screen" class="screen">
+      <h2>Event: 突然の雨</h2>
+      <p>急に雨が降ってきました。あなたはどうしますか？</p>
+      <div id="rain-options"></div>
+    </div>
+
+    <!-- フェーズ4: 願い事 -->
+    <div id="wish-screen" class="screen">
+      <h2>自由入力: 流れ星への願い</h2>
+      <p>今、叶えたい願い事を自由に書いてください。</p>
+      <input type="text" id="wish-input" placeholder="例: 自由に生きたい">
+      <button id="wish-btn">夜空に流す <i class="fa-regular fa-paper-plane"></i></button>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="result-screen" class="screen">
+      <div id="capture-area">
+        <h2 style="border:none; margin-bottom:5px;">My Nightscape</h2>
+        <div id="tritype-result" class="result-highlight"></div>
+        <div id="instinct-result" class="result-highlight-sub"></div>
+        
+        <div id="scores-container">
+          <h3 style="margin-top:0;">星々の共鳴スコア</h3>
+          <div class="chart-wrapper">
+            <canvas id="resultChart"></canvas>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 各タイプの解説 -->
+      <div id="result-explain-container">
+        <h4><i class="fa-solid fa-circle-info"></i> 各タイプの解説</h4>
+        <div class="result-explain-scroll">
+          <p><strong>Type 1:</strong> 完璧主義、正義感が強い、ルール重視</p>
+          <p><strong>Type 2:</strong> 献飾的、他者を助ける、愛情重視</p>
+          <p><strong>Type 3:</strong> 目標志向、有能でありたい、成功重視</p>
+          <p><strong>Type 4:</strong> 独自の世界観、感情の深さ、個性重視</p>
+          <p><strong>Type 5:</strong> 分析的、知識を蓄える、一人の時間重視</p>
+          <p><strong>Type 6:</strong> 慎重、最悪を想定する、安全と絆重視</p>
+          <p><strong>Type 7:</strong> 自由、楽しい体験を求める、好奇心重視</p>
+          <p><strong>Type 8:</strong> パワフル、コントロール、大切な仲間を守る</p>
+          <p><strong>Type 9:</strong> 平和主義、調和を好む、対立を避ける</p>
+        </div>
+      </div>
+
+      <!-- 📋 行動ログ枠 (画像保存の外に配置) -->
+      <div id="action-log-container">
+        <h4><i class="fa-solid fa-receipt"></i> 行動ログ</h4>
+        <textarea id="action-log-textarea" readonly></textarea>
+        <button id="copy-log-btn"><i class="fa-solid fa-copy"></i> ログをコピー</button>
+      </div>
+      
+      <p id="result-desc">星々が導き出した、あなたの輪郭です。</p>
+      
+      <div class="result-actions">
+        <button id="save-img-btn"><i class="fa-solid fa-download"></i> 画像として保存</button>
+        <button id="share-btn"><i class="fa-solid fa-share-nodes"></i> 結果を共有</button>
+      </div>
+      <button id="restart-btn">もう一度夜空を見上げる</button>
+    </div>
+  </div>
+
+  <!-- エニアグラム特性解説モーダル -->
+  <div id="explain-modal" class="hidden">
+    <div class="modal-content">
+      <h3><i class="fa-solid fa-book-open"></i> エニアグラム 9つの性格タイプ</h3>
+      <div class="explain-list">
+        <div class="explain-item"><strong>タイプ1: 改革する人</strong><p>完璧主義で正義感が強く、物事を正しく行おうとします。</p></div>
+        <div class="explain-item"><strong>タイプ2: 助ける人</strong><p>他者をサポートし、愛情深く、人との結びつきを大切にします。</p></div>
+        <div class="explain-item"><strong>タイプ3: 達成する人</strong><p>効率的で目標志向。成功やステータスを重視します。</p></div>
+        <div class="explain-item"><strong>タイプ4: 個性的な人</strong><p>独自の美意識を持ち、自分の深い感情や特別さを大切にします。</p></div>
+        <div class="explain-item"><strong>タイプ5: 調べる人</strong><p>客観的で、知識を蓄え、物事の仕組みを深く分析します。</p></div>
+        <div class="explain-item"><strong>タイプ6: 忠実な人</strong><p>慎重で安全性を求め、仲間との絆や義務を重んじます。</p></div>
+        <div class="explain-item"><strong>タイプ7: 熱中する人</strong><p>自由を愛し、新しいワクワクする体験や楽しさを追求します。</p></div>
+        <div class="explain-item"><strong>タイプ8: 挑戦する人</strong><p>自己主張が強くパワフル。自分の人生と大切な仲間を守り抜きます。</p></div>
+        <div class="explain-item"><strong>タイプ9: 平和をもたらす人</strong><p>穏やかで調和を好み、他者との葛藤を避けのんびり過ごします。</p></div>
+      </div>
+      <button id="close-explain-btn">閉じる</button>
+    </div>
+  </div>
+
+  <!-- 📳 スマホ風通知ポップアップ -->
+  <div id="notification-popup" class="hidden">
+    <div class="noti-header">
+      <div class="noti-title"><i class="fa-solid fa-comment-dots"></i> 新着メッセージ</div>
+      <div class="noti-time">たった今</div>
+    </div>
+    
+    <!-- 1. プレビュー表示ステート -->
+    <div id="noti-preview-state">
+      <div class="noti-body">メッセージが届いています。タップして開く。</div>
+      <div class="noti-actions">
+        <button id="noti-open">開く</button>
+        <button id="noti-close">閉じる</button>
+      </div>
+    </div>
+    
+    <!-- 2. 詳細表示ステート -->
+    <div id="noti-detail-state" class="hidden">
+      <div id="noti-message">
+        <div class="noti-icon"></div>
+        <div class="noti-text"></div>
+        <div class="noti-actions">
+          <button id="noti-ok">閉じる</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
