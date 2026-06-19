@@ -967,3 +967,41 @@ input[type="text"] {
   button { padding: 10px 20px; font-size: 13px; }
   .window { width: 8px; height: 13px; margin: 2px; }
 }
+
+/* 🔴 1. 画面全体のガタつき・引っ張りバウンスを完全に防止 */
+body, html {
+  margin: 0; padding: 0; width: 100%; height: 100%;
+  background: linear-gradient(to bottom, #11052C, #1c063b); 
+  font-family: 'Noto Serif JP', serif;
+  color: #F4E8C1; 
+  overflow: hidden !important; /* 強制的にスクロールを禁止 */
+  overscroll-behavior: none;   /* スマホの引っ張りバウンス（バウンド）を禁止 */
+  position: fixed;             /* 画面全体の位置を固定してスクロールを物理的に封じる */
+}
+
+/* 🔴 2. 彗星や雨、玉ボケがはみ出ても絶対に画面を揺らさないようにガード */
+#night-sky { 
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; 
+  overflow: hidden !important; /* 絶対にはみ出させない */
+}
+#weather-layer { 
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; 
+  overflow: hidden !important; /* 絶対にはみ出させない */
+}
+.orbs-container {
+  position: absolute; bottom: 0; left: 0; width: 100%; height: 50%;
+  z-index: 1; pointer-events: none; 
+  overflow: hidden !important; /* 玉ボケの上昇によるはみ出しを完全シャットアウト */
+}
+
+/* 🔴 3. スマホ連打時の青いハイライトや誤ズームを徹底防止 */
+button, .check-item, .pickable-star, input[type="text"], a {
+  -webkit-tap-highlight-color: transparent; /* タップした時の青い枠を消す */
+  touch-action: manipulation;               /* ダブルタップでの誤ズームを禁止して反応を爆速にする */
+  user-select: none;                        /* 連打した時にテキスト選択されて青くなるのを防ぐ */
+}
+
+/* 入力欄だけはテキスト選択やキーボード入力を許可する */
+input[type="text"] {
+  user-select: text !important;
+}
