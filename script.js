@@ -6,10 +6,12 @@ let p2History = [];
 let pickedStars = [];
 let myChartInstance = null;
 
-// 💥 チェックボックスのデータを保持する配列（ページを切り替えても絶対に消えない仕様！）
 let p1Answers = {}; 
 
-// 行動履歴ログ蓄積用
+// 🚀 GAS（Google Apps Script）連携用WebアプリURL
+// みつきがGAS側で「デプロイ」したWebアプリのURLをここに貼り付けてね！
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwTAr8fTysJuNsk1mUSVkakakH1kXC65p6SRrDdQWgWG1Ryo4I8VLf79__x6RwySkrgtQ/exec"; 
+
 let actionHistory = {
   selfType: "",
   checkedCount: {},
@@ -19,7 +21,6 @@ let actionHistory = {
   wishText: ""
 };
 
-// 📳 メッセージ通知制御 (5段階評価のQ5だけで発火 / ランダム1通)
 let hasNotified = false; 
 const triggerIndex = 5; 
 
@@ -105,7 +106,7 @@ function turnOffLights(count) {
   }
 }
 
-// 📖 エニアグラム解説モーダル
+// エニアグラム解説モーダル
 document.getElementById('show-explain-btn').addEventListener('click', () => {
   document.getElementById('explain-modal').classList.remove('hidden');
 });
@@ -115,21 +116,17 @@ document.getElementById('close-explain-btn').addEventListener('click', () => {
 
 // --- Phase 1: チェックボックス ---
 document.getElementById('start-btn').addEventListener('click', () => {
-  // 自認タイプ保存
   actionHistory.selfType = document.getElementById('self-type-input').value || "未入力";
   switchScreen('phase1-screen');
   renderPhase1Page();
 });
 
-// 現在のページのチェック状態を `p1Answers` に保存する関数（これで前のページの選択データが絶対に消えない！）
 function saveCurrentPageAnswers() {
   const start = p1PageIndex * p1PerPage;
   const end = Math.min(start + p1PerPage, phase1Questions.length);
   for (let i = start; i < end; i++) {
     const chk = document.getElementById(`chk-global-${i}`);
-    if (chk) {
-      p1Answers[i] = chk.checked;
-    }
+    if (chk) { p1Answers[i] = chk.checked; }
   }
 }
 
@@ -147,7 +144,6 @@ function renderPhase1Page() {
     const q = phase1Questions[i];
     const div = document.createElement('div');
     div.className = 'check-item';
-    // 前にチェックした状態を復元して描画
     const isChecked = p1Answers[i] ? 'checked' : '';
     
     div.innerHTML = `<input type="checkbox" id="chk-global-${i}" value="${q.type}" ${isChecked}>
@@ -169,22 +165,21 @@ function renderPhase1Page() {
 
 document.getElementById('prev-phase1-btn').addEventListener('click', () => {
   if (p1PageIndex > 0) { 
-    saveCurrentPageAnswers(); // 今のページを保存
+    saveCurrentPageAnswers(); 
     p1PageIndex--; 
     renderPhase1Page(); 
   }
 });
 
 document.getElementById('next-phase1-btn').addEventListener('click', () => {
-  saveCurrentPageAnswers(); // 進む前に今のページを保存
+  saveCurrentPageAnswers(); 
   p1PageIndex++;
   
   if (p1PageIndex * p1PerPage >= phase1Questions.length) {
-    // 💥 Phase1終了時に一括スコア計算 ＆ 加点を【3点】にしてウェイトを最大化！
     Object.keys(p1Answers).forEach(index => {
       if (p1Answers[index]) {
         const q = phase1Questions[index];
-        scores[q.type] += 3; // 各チェックにつき3点加算！
+        scores[q.type] += 3; 
         actionHistory.checkedCount[q.type] = (actionHistory.checkedCount[q.type] || 0) + 1;
       }
     });
@@ -198,14 +193,12 @@ document.getElementById('next-phase1-btn').addEventListener('click', () => {
 
 // --- Phase 2: 5段階評価 ---
 function showP2Question() {
-  // Q5で1回だけ、ランダムに誰かからピコンと通知！
   if (p2Index === triggerIndex && !hasNotified) {
     const selectedMsg = messages[Math.floor(Math.random() * messages.length)];
     showNotification(selectedMsg);
     hasNotified = true;
   }
 
-  // 🐛 隠れLSI芋虫の出現制御 (25%の確率で出現！)
   showCaterpillar();
 
   if (p2Index >= questions.length) {
@@ -230,7 +223,6 @@ function showP2Question() {
       if(q.type) scores[q.type] += opt.v;
       if(q.instinct) scores[q.instinct] += opt.v;
       
-      // ログ記録
       actionHistory.p2Answers.push({ q: q.text, ans: opt.l });
 
       turnOnLights(2);
@@ -248,23 +240,20 @@ document.getElementById('prev-phase2-btn').addEventListener('click', () => {
     const last = p2History.pop();
     if(last.type) scores[last.type] -= last.value;
     if(last.instinct) scores[last.instinct] -= last.value;
-    actionHistory.p2Answers.pop(); // ログから削除
+    actionHistory.p2Answers.pop(); 
     turnOffLights(2);
     p2Index--;
     showP2Question();
   }
 });
 
-// 🐛 隠れLSI芋虫クリックギミック完全復活！
 function showCaterpillar() {
   const caterpillar = document.getElementById('lsi-caterpillar');
   if(!caterpillar) return;
-  
-  // 既に喋ってる吹き出しがあれば削除
   const oldSpeech = document.querySelector('.lsi-speech');
   if(oldSpeech) oldSpeech.remove();
 
-  if(Math.random() < 0.25) { // 25%の確率でひっそり出現
+  if(Math.random() < 0.25) { 
     caterpillar.classList.remove('hidden');
   } else {
     caterpillar.classList.add('hidden');
@@ -272,8 +261,7 @@ function showCaterpillar() {
 }
 
 document.getElementById('lsi-caterpillar').addEventListener('click', function() {
-  if(document.querySelector('.lsi-speech')) return; // 連続クリック防止
-  
+  if(document.querySelector('.lsi-speech')) return; 
   const speech = document.createElement('div');
   speech.className = 'lsi-speech';
   speech.innerText = "……順序を守って進め給え。感情より構造が優先だ。";
@@ -285,13 +273,12 @@ document.getElementById('lsi-caterpillar').addEventListener('click', function() 
   }, 3000);
 });
 
-// --- 📳 スマホ風通知機能 (バグ完全消滅＆超絶クリーンアップ！) ---
+// --- 📳 スマホ風通知機能 ---
 function showNotification(msg) {
   const popup = document.getElementById('notification-popup');
   const previewState = document.getElementById('noti-preview-state');
   const detailState = document.getElementById('noti-detail-state');
   
-  // 完全な初期化
   detailState.classList.add('hidden');
   previewState.classList.remove('hidden');
   detailState.querySelector('.noti-icon').innerText = "";
@@ -299,19 +286,14 @@ function showNotification(msg) {
   
   popup.classList.remove('hidden');
 
-  // 開く
   document.getElementById('noti-open').onclick = () => {
     previewState.classList.add('hidden'); 
     detailState.classList.remove('hidden'); 
-    
     detailState.querySelector('.noti-icon').innerText = msg.icon;
     detailState.querySelector('.noti-text').innerText = msg.text;
   };
   
-  const closeNoti = () => {
-    popup.classList.add('hidden');
-  };
-  
+  const closeNoti = () => { popup.classList.add('hidden'); };
   document.getElementById('noti-close').onclick = closeNoti;
   document.getElementById('noti-ok').onclick = closeNoti;
 }
@@ -342,7 +324,6 @@ function analyzeStars() {
   let d3 = Math.hypot(pickedStars[2].x - pickedStars[0].x, pickedStars[2].y - pickedStars[0].y);
   let maxD = Math.max(d1, d2, d3);
   
-  // 💥 ギミックの配点を【0.5点】にして、判定に悪影響を与えない補正程度に変更！
   if (maxD < 20) { 
     scores['sp'] += 0.5; scores['5'] += 0.5; 
     actionHistory.starResult = "密集(中心寄り/sp・5補正)";
@@ -373,7 +354,6 @@ function startRain() {
   [ {t:"傘を探す", s:'6', i:'sp'}, {t:"そのまま歩く", s:'9', i:null}, {t:"雨宿りする", s:'5', i:'sp'}, {t:"走る", s:'3', i:null}, {t:"空を見る", s:'4', i:'sx'} ].forEach(opt => {
     let btn = document.createElement('button'); btn.innerText = opt.t; btn.style.display = "block"; btn.style.width = "100%";
     btn.addEventListener('click', () => {
-      // 💥 ギミックの雨補正を【0.5点】に調整！
       scores[opt.s] += 0.5; if(opt.i) scores[opt.i] += 0.5;
       actionHistory.rainResult = `${opt.t}(タイプ${opt.s}・本能${opt.i || "なし"}補正)`;
       document.getElementById('weather-layer').innerHTML = ''; 
@@ -388,7 +368,6 @@ document.getElementById('wish-btn').addEventListener('click', () => {
   const wish = document.getElementById('wish-input').value;
   actionHistory.wishText = wish || "未入力";
   
-  // 💥 願い事のキーワード補正も【0.5点】にして微調整レベルに変更！
   for(const [k, v] of Object.entries(wishKeywords)) { 
     v.forEach(w => { if(wish.includes(w)) scores[k] += 0.5; }); 
   }
@@ -409,13 +388,20 @@ function calculateResult() {
   const tritypeWings = topTypes.map(t => getWing(t)).join(' / ');
   const instincts = ['sp', 'sx', 'so'].sort((a,b) => scores[b] - scores[a]);
 
-  document.getElementById('tritype-result').innerText = `△${topTypes.join('')} (${tritypeWings})`;
-  document.getElementById('instinct-result').innerText = `${instincts[0]}/${instincts[1]}`;
+  const finalTritype = `△${topTypes.join('')} (${tritypeWings})`;
+  const finalInstinct = `${instincts[0]}/${instincts[1]}`;
+
+  document.getElementById('tritype-result').innerText = finalTritype;
+  document.getElementById('instinct-result').innerText = finalInstinct;
   
   turnOnLights(100);
   switchScreen('result-screen');
   drawChart(); 
-  generateActionLog(); // 📋 ログ生成
+  
+  const logText = generateActionLog(); // 📋 ログ生成
+  
+  // 🚀 GASへデータ送信
+  sendDataToGAS(finalTritype, finalInstinct, logText);
 }
 
 // 📊 棒グラフ
@@ -454,7 +440,7 @@ function drawChart() {
   });
 }
 
-// 📋 行動ログテキスト生成処理
+// 行動ログ生成
 function generateActionLog() {
   let logText = `【Nightscape Tritype 診断行動ログ】\n`;
   logText += `------------------------------------\n`;
@@ -475,35 +461,55 @@ function generateActionLog() {
   logText += `  「${actionHistory.wishText}」\n`;
   logText += `------------------------------------\n`;
   logText += `【最終エニアスコア】\n`;
-  for(let i=1; i<=9; i++) {
-    logText += `  Type ${i}: ${scores[i]}点\n`;
-  }
+  for(let i=1; i<=9; i++) { logText += `  Type ${i}: ${scores[i]}点\n`; }
   logText += `【最終生得本能スコア】\n`;
   logText += `  sp: ${scores['sp']}点 | sx: ${scores['sx']}点 | so: ${scores['so']}点\n`;
 
   document.getElementById('action-log-textarea').value = logText;
+  return logText;
 }
 
-// コピーボタン処理
+// 🚀 GASにデータをPOSTする関数
+function sendDataToGAS(tritype, instinct, logText) {
+  if (GAS_WEB_APP_URL.includes("XXXXX")) {
+    console.log("GAS_URLがデフォルト値のままのため、送信をスキップします。");
+    return;
+  }
+
+  const payload = {
+    selfType: actionHistory.selfType,
+    tritype: tritype,
+    instinct: instinct,
+    wish: actionHistory.wishText,
+    t1: scores['1'], t2: scores['2'], t3: scores['3'], t4: scores['4'], t5: scores['5'], t6: scores['6'], t7: scores['7'], t8: scores['8'], t9: scores['9'],
+    sp: scores['sp'], sx: scores['sx'], so: scores['so'],
+    log: logText
+  };
+
+  fetch(GAS_WEB_APP_URL, {
+    method: "POST",
+    mode: "no-cors", // CORSエラーを回避
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  })
+  .then(() => console.log("GASへのデータ送信に成功しました。"))
+  .catch(err => console.error("GAS送信エラー:", err));
+}
+
+// ログコピー
 document.getElementById('copy-log-btn').addEventListener('click', () => {
   const textarea = document.getElementById('action-log-textarea');
   textarea.select();
   document.execCommand('copy');
-  
   const btn = document.getElementById('copy-log-btn');
   btn.innerHTML = `<i class="fa-solid fa-check"></i> コピーしました！`;
-  setTimeout(() => {
-    btn.innerHTML = `<i class="fa-solid fa-copy"></i> ログをコピー`;
-  }, 2000);
+  setTimeout(() => { btn.innerHTML = `<i class="fa-solid fa-copy"></i> ログをコピー`; }, 2000);
 });
 
 // 画像保存
 document.getElementById('save-img-btn').addEventListener('click', () => {
   const captureArea = document.getElementById('capture-area');
-  html2canvas(captureArea, {
-    backgroundColor: '#11052C', 
-    scale: 2 
-  }).then(canvas => {
+  html2canvas(captureArea, { backgroundColor: '#11052C', scale: 2 }).then(canvas => {
     const link = document.createElement('a');
     link.download = 'nightscape_tritype_result.png';
     link.href = canvas.toDataURL('image/png');
@@ -519,11 +525,7 @@ document.getElementById('share-btn').addEventListener('click', () => {
   const shareUrl = window.location.href;
 
   if (navigator.share) {
-    navigator.share({
-      title: 'Nightscape Tritype 診断結果',
-      text: shareText,
-      url: shareUrl
-    }).catch(err => console.log('共有エラー:', err));
+    navigator.share({ title: 'Nightscape Tritype 診断結果', text: shareText, url: shareUrl }).catch(err => console.log('共有エラー:', err));
   } else {
     const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(twitterUrl, '_blank');
